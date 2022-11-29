@@ -17,27 +17,33 @@ namespace BuildingContractor.WebAPI.Controllers
         public CustomerController(IMapper mapper) => _mapper = mapper;
 
         [HttpGet("[action]/")]
-        public async Task<ActionResult<CustomerListVm>> GetAll()
+        public async Task<ActionResult<CustomerListVm>> GetAll([FromQuery] int page)
         {
-            var query = new GetCustomerListQuery();
+            var query = new GetCustomerListQuery { page = page >= 0 ? page : 0 };
             var vm = await Mediator.Send(query);
-            Console.WriteLine(vm);
             return Ok(vm);
         }
 
         [HttpGet("{id}/")]
-        public async Task<ActionResult<CustomerListVm>> Get(int id)
+        public async Task<ActionResult<CustomerDetailsVm>> Get(int id)
         {
             var query = new GetCustomersDetailsQuery
             {
                 id = id
             };
-            var vm = await Mediator.Send(query);
-            return Ok(vm);
+            try
+            {
+                var vm = await Mediator.Send(query);
+                return Ok(vm);
+            }
+            catch
+            {
+                return BadRequest();
+            }
         }
 
         [HttpPost]
-        public async Task<ActionResult<int>> Create([FromForm] CreateCustomerDto createCustomerDto)
+        public async Task<ActionResult<int>> Create([FromBody] CreateCustomerDto createCustomerDto)
         {
             var command = _mapper.Map<CreateCustomerCommand>(createCustomerDto);
             var noteId = await Mediator.Send(command);
@@ -45,11 +51,18 @@ namespace BuildingContractor.WebAPI.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> Update([FromForm] UpdateCustomerDto updateCustomerDto)
+        public async Task<IActionResult> Update([FromBody] UpdateCustomerDto updateCustomerDto)
         {
             var command = _mapper.Map<UpdateCustomerCommand>(updateCustomerDto);
-            await Mediator.Send(command);
-            return NoContent();
+            try
+            {
+                await Mediator.Send(command);
+                return NoContent();
+            }
+            catch
+            {
+                return BadRequest();
+            }
         }
 
         [HttpDelete("{id}")]
@@ -59,8 +72,15 @@ namespace BuildingContractor.WebAPI.Controllers
             {
                 id = id,
             };
-            await Mediator.Send(command);
-            return NoContent();
+            try
+            {
+                await Mediator.Send(command);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

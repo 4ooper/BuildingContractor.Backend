@@ -15,8 +15,14 @@ namespace BuildingContractor.Application.Customers.Quieres.GetCustomerList
 
         public async Task<CustomerListVm> Handle(GetCustomerListQuery request, CancellationToken cancellationToken)
         {
-            var customersQuery = await _dbcontext.customers.ProjectTo<CustomerLookupDto>(_mapper.ConfigurationProvider).ToListAsync(cancellationToken);
-            return new CustomerListVm { customers = customersQuery };
+            var records = await _dbcontext.customers.Skip(request.page * 15).Take(15).ProjectTo<CustomerLookupDto>(_mapper.ConfigurationProvider).ToListAsync(cancellationToken);
+            var pagesCount = Math.Ceiling(Decimal.Parse((_dbcontext.customers.Count() / 15.0).ToString()));
+            return new CustomerListVm
+            {
+                customers = records,
+                totalElements = _dbcontext.customers.Count(),
+                pagesCount = (int)pagesCount
+            };
         }
     }
 }
